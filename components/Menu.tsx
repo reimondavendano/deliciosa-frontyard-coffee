@@ -1,6 +1,6 @@
 'use client';
 
-import { Coffee, Droplet, Cake } from 'lucide-react';
+import { Coffee, Droplet, Cake, Star } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
 
@@ -45,57 +45,72 @@ export default function Menu() {
   ];
 
   return (
-    <section id="menu" className="py-20 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="menu" className="py-24 bg-stone-50 relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-rustic-blue/5 rounded-full translate-x-1/3 -translate-y-1/3 blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-rust/5 rounded-full -translate-x-1/2 translate-y-1/2 blur-3xl"></div>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-rustic-blue-dark mb-4">
+          <span className="text-rust font-bold tracking-wider uppercase text-sm mb-2 block">Taste the Difference</span>
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-rustic-blue-dark mb-6">
             Our Menu
           </h2>
-          <div className="w-24 h-1 bg-rust mx-auto mb-6"></div>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Handcrafted with passion, served with love
+          <div className="w-24 h-1 bg-rust mx-auto mb-8 rounded-full"></div>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Handcrafted with passion, served with love. Explore our selection of premium drinks and artisan pastries.
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          {categories.map((category) => {
-            const Icon = category.icon;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${activeCategory === category.id
-                  ? 'bg-rustic-blue text-white shadow-lg'
-                  : 'bg-stone-100 text-gray-700 hover:bg-stone-200'
-                  }`}
-              >
-                <Icon className="h-5 w-5" />
-                {category.label}
-              </button>
-            );
-          })}
+        <div className="flex justify-center mb-16">
+          <div className="inline-flex p-1.5 bg-white rounded-full shadow-md border border-stone-100">
+            {categories.map((category) => {
+              const Icon = category.icon;
+              const isActive = activeCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all duration-300 ${isActive
+                    ? 'bg-rustic-blue text-white shadow-sm'
+                    : 'text-gray-600 hover:text-rustic-blue hover:bg-stone-50'
+                    }`}
+                >
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-rust'}`} />
+                  {category.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {menuData[activeCategory as keyof typeof menuData].map((item, index) => (
             <div
               key={index}
-              className="bg-warm-cream/30 border border-warm-brown/20 rounded-lg p-6 hover:shadow-lg transition-all hover:scale-105 flex flex-col"
+              className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-stone-100"
             >
-              <div className="relative w-full h-48 mb-4 rounded-md overflow-hidden">
+              <div className="relative w-full h-64 overflow-hidden">
                 <Image
                   src={item.image}
                   alt={item.name}
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-serif text-xl font-bold text-rustic-blue-dark">
-                  {item.name}
-                </h3>
+
+              <div className="p-6 relative">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-serif text-xl font-bold text-rustic-blue-dark group-hover:text-rust transition-colors">
+                    {item.name}
+                  </h3>
+                  <Star className="h-5 w-5 text-rust opacity-0 group-hover:opacity-100 transition-opacity transform scale-50 group-hover:scale-100" />
+                </div>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {item.description}
+                </p>
               </div>
-              <p className="text-gray-600">{item.description}</p>
             </div>
           ))}
         </div>
