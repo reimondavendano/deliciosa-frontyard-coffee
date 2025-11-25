@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Send, Loader2 } from 'lucide-react';
 
 export default function Information() {
   const [formData, setFormData] = useState({
@@ -11,11 +11,123 @@ export default function Information() {
     eventDate: '',
     message: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Thank you for your inquiry! We will get back to you soon.');
-    setFormData({ name: '', email: '', phone: '', eventDate: '', message: '' });
+    setIsSubmitting(true);
+
+    try {
+      // Format the inquiry message for clipboard/Messenger
+      const messengerMessage = `🍽️ NEW INQUIRY - Deliciosa Food Products
+
+👤 Name: ${formData.name}
+📧 Email: ${formData.email}
+📱 Phone: ${formData.phone}
+📅 Event Date: ${formData.eventDate || 'Not specified'}
+
+💬 Message:
+${formData.message}`;
+
+      // Send email using Web3Forms (free service)
+      const emailData = {
+        access_key: process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY || '', // Get from https://web3forms.com
+        subject: `New Inquiry from ${formData.name} - Deliciosa Food Products`,
+        from_name: 'Deliciosa Website',
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        event_date: formData.eventDate || 'Not specified',
+        message: formData.message,
+        to_email: 'reimondavendano@gmail.com',
+      };
+
+      // Send to Web3Forms
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Copy inquiry to clipboard
+        try {
+          await navigator.clipboard.writeText(messengerMessage);
+
+          // Open Facebook Messenger
+          const messengerUrl = 'https://m.me/reimondavendano';
+          window.open(messengerUrl, '_blank');
+
+          alert(
+            '✅ Thank you for your inquiry!\n\n' +
+            '📧 Email sent successfully to Deliciosa!\n\n' +
+            '📋 Your inquiry has been copied to clipboard!\n' +
+            '💬 We\'ve opened Facebook Messenger - just paste (Ctrl+V) and send!'
+          );
+        } catch (clipboardError) {
+          // Fallback if clipboard fails
+          const messengerUrl = 'https://m.me/reimondavendano';
+          window.open(messengerUrl, '_blank');
+
+          alert(
+            '✅ Thank you for your inquiry!\n\n' +
+            '📧 Email sent successfully to Deliciosa!\n\n' +
+            '💬 We\'ve opened Facebook Messenger for you.\n' +
+            'Please send your inquiry details there as well.'
+          );
+        }
+
+        // Reset form
+        setFormData({ name: '', email: '', phone: '', eventDate: '', message: '' });
+      } else {
+        throw new Error('Failed to send email');
+      }
+    } catch (error) {
+      console.error('Error submitting inquiry:', error);
+
+      // Format the inquiry message for clipboard/Messenger
+      const messengerMessage = `🍽️ NEW INQUIRY - Deliciosa Food Products
+
+👤 Name: ${formData.name}
+📧 Email: ${formData.email}
+📱 Phone: ${formData.phone}
+📅 Event Date: ${formData.eventDate || 'Not specified'}
+
+💬 Message:
+${formData.message}`;
+
+      // Even if email fails, still try to copy and open Messenger
+      try {
+        await navigator.clipboard.writeText(messengerMessage);
+
+        const messengerUrl = 'https://m.me/reimondavendano';
+        window.open(messengerUrl, '_blank');
+
+        alert(
+          '⚠️ There was an issue sending the email.\n\n' +
+          '📋 Your inquiry has been copied to clipboard!\n' +
+          '💬 We\'ve opened Facebook Messenger - please paste (Ctrl+V) and send your inquiry there.'
+        );
+      } catch (clipboardError) {
+        const messengerUrl = 'https://m.me/reimondavendano';
+        window.open(messengerUrl, '_blank');
+
+        alert(
+          '⚠️ There was an issue sending the email.\n\n' +
+          '💬 We\'ve opened Facebook Messenger for you.\n' +
+          'Please send your inquiry details there.'
+        );
+      }
+
+      // Reset form
+      setFormData({ name: '', email: '', phone: '', eventDate: '', message: '' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -204,10 +316,20 @@ export default function Information() {
 
                 <button
                   type="submit"
-                  className="w-full bg-rust hover:bg-rust/90 text-white font-semibold py-4 rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="w-full bg-rust hover:bg-rust/90 text-white font-semibold py-4 rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="h-5 w-5" />
-                  Send Inquiry
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5" />
+                      Send Inquiry
+                    </>
+                  )}
                 </button>
               </form>
             </div>
