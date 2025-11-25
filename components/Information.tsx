@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Mail, Phone, MapPin, Clock, Send, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mail, Phone, MapPin, Clock, Send, Loader2, X, Copy, MessageCircle } from 'lucide-react';
 
 export default function Information() {
   const [formData, setFormData] = useState({
@@ -12,14 +12,16 @@ export default function Information() {
     message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [inquiryData, setInquiryData] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    try {
-      // Format the inquiry message for clipboard/Messenger
-      const messengerMessage = `🍽️ NEW INQUIRY - Deliciosa Food Products
+    // Format the inquiry message
+    const messengerMessage = `🍽️ NEW INQUIRY - Deliciosa Food Products
 
 👤 Name: ${formData.name}
 📧 Email: ${formData.email}
@@ -29,9 +31,13 @@ export default function Information() {
 💬 Message:
 ${formData.message}`;
 
+    // Store inquiry data for modal
+    setInquiryData(messengerMessage);
+
+    try {
       // Send email using Web3Forms (free service)
       const emailData = {
-        access_key: process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY || '', // Get from https://web3forms.com
+        access_key: process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY || '',
         subject: `New Inquiry from ${formData.name} - Deliciosa Food Products`,
         from_name: 'Deliciosa Website',
         name: formData.name,
@@ -52,82 +58,56 @@ ${formData.message}`;
       });
 
       const result = await response.json();
+      setEmailSent(result.success);
 
-      if (result.success) {
-        // Copy inquiry to clipboard
-        try {
-          await navigator.clipboard.writeText(messengerMessage);
+      // Show modal regardless of email success
+      setShowModal(true);
 
-          // Open Facebook Messenger
-          const messengerUrl = 'https://m.me/reimondavendano';
-          window.open(messengerUrl, '_blank');
-
-          alert(
-            '✅ Thank you for your inquiry!\n\n' +
-            '📧 Email sent successfully to Deliciosa!\n\n' +
-            '📋 Your inquiry has been copied to clipboard!\n' +
-            '💬 We\'ve opened Facebook Messenger - just paste (Ctrl+V) and send!'
-          );
-        } catch (clipboardError) {
-          // Fallback if clipboard fails
-          const messengerUrl = 'https://m.me/reimondavendano';
-          window.open(messengerUrl, '_blank');
-
-          alert(
-            '✅ Thank you for your inquiry!\n\n' +
-            '📧 Email sent successfully to Deliciosa!\n\n' +
-            '💬 We\'ve opened Facebook Messenger for you.\n' +
-            'Please send your inquiry details there as well.'
-          );
-        }
-
-        // Reset form
-        setFormData({ name: '', email: '', phone: '', eventDate: '', message: '' });
-      } else {
-        throw new Error('Failed to send email');
-      }
+      // Reset form
+      setFormData({ name: '', email: '', phone: '', eventDate: '', message: '' });
     } catch (error) {
       console.error('Error submitting inquiry:', error);
+      setEmailSent(false);
 
-      // Format the inquiry message for clipboard/Messenger
-      const messengerMessage = `🍽️ NEW INQUIRY - Deliciosa Food Products
-
-👤 Name: ${formData.name}
-📧 Email: ${formData.email}
-📱 Phone: ${formData.phone}
-📅 Event Date: ${formData.eventDate || 'Not specified'}
-
-💬 Message:
-${formData.message}`;
-
-      // Even if email fails, still try to copy and open Messenger
-      try {
-        await navigator.clipboard.writeText(messengerMessage);
-
-        const messengerUrl = 'https://m.me/reimondavendano';
-        window.open(messengerUrl, '_blank');
-
-        alert(
-          '⚠️ There was an issue sending the email.\n\n' +
-          '📋 Your inquiry has been copied to clipboard!\n' +
-          '💬 We\'ve opened Facebook Messenger - please paste (Ctrl+V) and send your inquiry there.'
-        );
-      } catch (clipboardError) {
-        const messengerUrl = 'https://m.me/reimondavendano';
-        window.open(messengerUrl, '_blank');
-
-        alert(
-          '⚠️ There was an issue sending the email.\n\n' +
-          '💬 We\'ve opened Facebook Messenger for you.\n' +
-          'Please send your inquiry details there.'
-        );
-      }
+      // Show modal even if email fails
+      setShowModal(true);
 
       // Reset form
       setFormData({ name: '', email: '', phone: '', eventDate: '', message: '' });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Automatically copy to clipboard and open Messenger when modal shows
+  useEffect(() => {
+    if (showModal && inquiryData) {
+      // Auto-copy to clipboard
+      navigator.clipboard.writeText(inquiryData)
+        .then(() => {
+          console.log('Inquiry details automatically copied to clipboard');
+        })
+        .catch((error) => {
+          console.error('Failed to auto-copy:', error);
+        });
+
+      // Auto-open Facebook Messenger
+      window.open('https://web.facebook.com/Deliciosaphilippines', '_blank');
+    }
+  }, [showModal, inquiryData]);
+
+  const handleCopyInquiry = async () => {
+    try {
+      await navigator.clipboard.writeText(inquiryData);
+      alert('✅ Inquiry details copied to clipboard!');
+    } catch (error) {
+      alert('❌ Failed to copy. Please select and copy the text manually.');
+    }
+  };
+
+  const handleMessageUs = () => {
+    window.open('https://web.facebook.com/Deliciosaphilippines', '_blank');
+    setShowModal(false);
   };
 
   return (
@@ -336,6 +316,102 @@ ${formData.message}`;
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="font-serif text-2xl font-bold text-rustic-blue-dark">
+                {emailSent ? '✅ Inquiry Submitted!' : '⚠️ Inquiry Received'}
+              </h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Status Message */}
+              <div className={`p-4 rounded-lg ${emailSent ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                <p className={`text-sm ${emailSent ? 'text-green-800' : 'text-yellow-800'}`}>
+                  {emailSent ? (
+                    <>
+                      <strong>Thank you!</strong> Your inquiry has been sent to our email successfully.
+                      We'll get back to you as soon as possible.
+                    </>
+                  ) : (
+                    <>
+                      <strong>Note:</strong> There was an issue sending the email.
+                      Please use the alternative option below to contact us directly.
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* Alternative Option */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Alternative: Message Us on Facebook
+                </h4>
+                <p className="text-sm text-blue-800 mb-3">
+                  {emailSent
+                    ? "For faster response, you can also send us a message on Facebook. We've prepared your inquiry details below - just copy and paste!"
+                    : "Please send us a message on Facebook with your inquiry details. Click 'Copy Details' below, then click 'Message Us' to open our Facebook page."}
+                </p>
+              </div>
+
+              {/* Inquiry Details */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Your Inquiry Details:
+                </label>
+                <textarea
+                  readOnly
+                  value={inquiryData}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50 text-sm font-mono resize-none"
+                  rows={12}
+                  onClick={(e) => e.currentTarget.select()}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Tip: Click the text above to select all, or use the Copy button below
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleCopyInquiry}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2 border border-gray-300"
+                >
+                  <Copy className="h-5 w-5" />
+                  Copy Details
+                </button>
+                <button
+                  onClick={handleMessageUs}
+                  className="flex-1 bg-rust hover:bg-rust/90 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  Message Us on Facebook
+                </button>
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-full bg-white hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-all border border-gray-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
