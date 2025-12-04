@@ -1,12 +1,18 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Playfair_Display, Lato, Poppins } from 'next/font/google';
+import { Playfair_Display, Lato, Poppins, Montserrat } from 'next/font/google';
 
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-montserrat",
+});
 
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"], // pick the weights you need
-  variable: "--font-poppins",           // optional: CSS variable
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
 });
 
 const playfair = Playfair_Display({
@@ -34,7 +40,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${playfair.variable} ${lato.variable} font-sans`}>{children}</body>
+      <body className={`${playfair.variable} ${lato.variable} ${poppins.variable} ${montserrat.variable} font-sans`}>{children}</body>
     </html>
   );
 }

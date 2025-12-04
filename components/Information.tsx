@@ -165,9 +165,8 @@ ${formData.message}`;
                   <Clock className="h-6 w-6 text-rustic-blue" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Booking Hours</h4>
-                  <p className="text-gray-600">Mon-Fri: 4PM - 10PM</p>
-                  <p className="text-gray-600">Sat: 3PM - 10PM</p>
+                  <h4 className="font-semibold text-gray-900 mb-1">Opening Hours</h4>
+                  <p className="text-gray-600">Mon-Saturday: 10:00-22:00</p>
                 </div>
               </div>
             </div>

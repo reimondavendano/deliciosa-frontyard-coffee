@@ -12,6 +12,8 @@ const config: Config = {
       fontFamily: {
         serif: ['var(--font-playfair)', 'serif'],
         sans: ['var(--font-lato)', 'sans-serif'],
+        poppins: ['var(--font-poppins)', 'sans-serif'],
+        montserrat: ['var(--font-montserrat)', 'sans-serif'],
       },
       colors: {
         rustic: {

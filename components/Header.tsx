@@ -29,7 +29,7 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
         ? 'bg-white/95 backdrop-blur-sm shadow-md'
-        : 'bg-transparent'
+        : 'bg-black/20 backdrop-blur-sm'
         }`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,8 +40,8 @@ export default function Header() {
               alt="Deliciosa Logo"
               width={180}
               height={10}
-              className="w-auto object-contain"
-              style={{ height: '9rem' }}
+              className="w-auto object-contain drop-shadow-lg"
+              style={{ height: '5rem' }}
               priority
             />
           </Link>
@@ -51,7 +51,7 @@ export default function Header() {
               <Link
                 key={item.label}
                 href={item.href}
-                className={`font-medium transition-all hover:text-rust relative group ${isScrolled ? 'text-gray-700' : 'text-white drop-shadow-lg'
+                className={`font-medium transition-all hover:text-rust relative group ${isScrolled ? 'text-gray-700' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
                   }`}
               >
                 {item.label}

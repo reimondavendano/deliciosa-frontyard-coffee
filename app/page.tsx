@@ -8,6 +8,7 @@ import Gallery from '@/components/Gallery';
 import Packages from '@/components/Packages';
 import Information from '@/components/Information';
 import Footer from '@/components/Footer';
+import PreloadModal from '@/components/PreloadModal';
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
       <Packages />
       <Information />
       <Footer />
+      <PreloadModal />
     </main>
   );
 }

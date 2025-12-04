@@ -1,49 +1,119 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const galleryImages = [
+  // Events
   {
-    url: '../operations/ops_1.jpg',
-    alt: 'Coffee preparation',
-    category: 'operation',
-  },
-  {
-    url: '../events/1.jpeg',
-    alt: 'Wedding event setup',
+    url: '/events/1.jpeg',
+    alt: 'Event 1',
     category: 'events',
   },
   {
-    url: '../operations/ops_2.jpg',
-    alt: 'Barista making latte',
-    category: 'operation',
-  },
-  {
-    url: '../events/2.jpeg',
-    alt: 'Corporate event',
+    url: '/events/2.jpeg',
+    alt: 'Event 2',
     category: 'events',
   },
   {
-    url: '../operations/ops_3.jpg',
-    alt: 'Fresh pastries',
+    url: '/events/3.jpeg',
+    alt: 'Event 3',
+    category: 'events',
+  },
+  {
+    url: '/events/4.jpg',
+    alt: 'Event 4',
+    category: 'events',
+  },
+  {
+    url: '/events/5.jpg',
+    alt: 'Event 5',
+    category: 'events',
+  },
+  {
+    url: '/events/6.jpg',
+    alt: 'Event 6',
+    category: 'events',
+  },
+  {
+    url: '/events/7.jpg',
+    alt: 'Event 7',
+    category: 'events',
+  },
+  // Operations
+  {
+    url: '/operations/1.jpg',
+    alt: 'Operations 1',
     category: 'operation',
   },
   {
-    url: '../events/3.jpeg',
-    alt: 'Birthday celebration',
-    category: 'events',
+    url: '/operations/2.jpg',
+    alt: 'Operations 2',
+    category: 'operation',
+  },
+  {
+    url: '/operations/3.jpg',
+    alt: 'Operations 3',
+    category: 'operation',
+  },
+  {
+    url: '/operations/4.jpg',
+    alt: 'Operations 4',
+    category: 'operation',
+  },
+  {
+    url: '/operations/5.jpg',
+    alt: 'Operations 5',
+    category: 'operation',
+  },
+  {
+    url: '/operations/6.jpeg',
+    alt: 'Operations 6',
+    category: 'operation',
+  },
+  {
+    url: '/operations/7.jpg',
+    alt: 'Operations 7',
+    category: 'operation',
+  },
+  {
+    url: '/operations/8.jpg',
+    alt: 'Operations 8',
+    category: 'operation',
   },
 ];
+
+const ITEMS_PER_PAGE = 6;
 
 export default function Gallery() {
   const [filter, setFilter] = useState('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredImages =
     filter === 'all'
       ? galleryImages
       : galleryImages.filter((img) => img.category === filter);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredImages.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentImages = filteredImages.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filter changes
+  const handleFilterChange = (newFilter: string) => {
+    setFilter(newFilter);
+    setCurrentPage(1);
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   return (
     <section id="gallery" className="py-20 bg-stone-100">
@@ -59,7 +129,7 @@ export default function Gallery() {
 
           <div className="flex flex-wrap justify-center gap-4">
             <button
-              onClick={() => setFilter('all')}
+              onClick={() => handleFilterChange('all')}
               className={`px-6 py-2 rounded-full font-semibold transition-all ${filter === 'all'
                 ? 'bg-rustic-blue text-white'
                 : 'bg-white text-gray-700 hover:bg-stone-200'
@@ -68,7 +138,7 @@ export default function Gallery() {
               All
             </button>
             <button
-              onClick={() => setFilter('operation')}
+              onClick={() => handleFilterChange('operation')}
               className={`px-6 py-2 rounded-full font-semibold transition-all ${filter === 'operation'
                 ? 'bg-rustic-blue text-white'
                 : 'bg-white text-gray-700 hover:bg-stone-200'
@@ -77,7 +147,7 @@ export default function Gallery() {
               Operations
             </button>
             <button
-              onClick={() => setFilter('events')}
+              onClick={() => handleFilterChange('events')}
               className={`px-6 py-2 rounded-full font-semibold transition-all ${filter === 'events'
                 ? 'bg-rustic-blue text-white'
                 : 'bg-white text-gray-700 hover:bg-stone-200'
@@ -88,8 +158,8 @@ export default function Gallery() {
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredImages.map((image, index) => (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {currentImages.map((image, index) => (
             <div
               key={index}
               className="relative group overflow-hidden rounded-lg cursor-pointer aspect-square"
@@ -106,6 +176,44 @@ export default function Gallery() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 font-semibold hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              Previous
+            </button>
+
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-10 h-10 rounded-lg font-semibold transition-all ${currentPage === page
+                      ? 'bg-rustic-blue text-white'
+                      : 'bg-white text-gray-700 hover:bg-stone-200'
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 font-semibold hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              Next
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedImage && (

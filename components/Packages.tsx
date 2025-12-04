@@ -2,12 +2,14 @@
 
 import { Coffee, Cake, Check } from 'lucide-react';
 import { useState } from 'react';
+import Image from 'next/image';
 
 const coffeePackages = [
   {
     name: 'Mini',
     pax: '50 pax',
     price: '₱6,500',
+    image: '/packages/mini.png',
     features: [
       '4 flavors (coffee & non-coffee)',
       '3 hours of service',
@@ -22,6 +24,7 @@ const coffeePackages = [
     name: 'Classic',
     pax: '100 pax',
     price: '₱11,500',
+    image: '/packages/classic.png',
     features: [
       '6 flavors (coffee & non-coffee)',
       '3 hours of service',
@@ -35,7 +38,8 @@ const coffeePackages = [
   {
     name: 'Plus',
     pax: '150 pax',
-    price: '₱15,500',
+    price: '₱16,500',
+    image: '/packages/plus.png',
     features: [
       '8 flavors (coffee & non-coffee)',
       '4 hours of service',
@@ -148,6 +152,18 @@ export default function Packages() {
               {pkg.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-rust text-white px-6 py-1 rounded-full text-sm font-bold shadow-lg whitespace-nowrap">
                   MOST POPULAR
+                </div>
+              )}
+
+              {/* Package Image - only for coffee packages */}
+              {activeTab === 'coffee' && 'image' in pkg && (
+                <div className="relative w-full h-48 mb-6 rounded-xl overflow-hidden">
+                  <Image
+                    src={pkg.image as string}
+                    alt={pkg.name}
+                    fill
+                    className="object-contain"
+                  />
                 </div>
               )}
 
