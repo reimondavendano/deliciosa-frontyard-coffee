@@ -45,7 +45,7 @@ ${formData.message}`;
         phone: formData.phone,
         event_date: formData.eventDate || 'Not specified',
         message: formData.message,
-        to_email: 'reimondavendano@gmail.com',
+        to_email: process.env.NEXT_PUBLIC_TO_EMAIL || 'deliciosafoodproducts@gmail.com',
       };
 
       // Send to Web3Forms
@@ -79,7 +79,7 @@ ${formData.message}`;
     }
   };
 
-  // Automatically copy to clipboard and open Messenger when modal shows
+  // Automatically copy to clipboard when modal shows
   useEffect(() => {
     if (showModal && inquiryData) {
       // Auto-copy to clipboard
@@ -90,9 +90,6 @@ ${formData.message}`;
         .catch((error) => {
           console.error('Failed to auto-copy:', error);
         });
-
-      // Auto-open Facebook Messenger
-      window.open('https://web.facebook.com/Deliciosaphilippines', '_blank');
     }
   }, [showModal, inquiryData]);
 
@@ -106,7 +103,8 @@ ${formData.message}`;
   };
 
   const handleMessageUs = () => {
-    window.open('https://web.facebook.com/Deliciosaphilippines', '_blank');
+    // Open Messenger app with the page
+    window.open('https://m.me/Deliciosaphilippines', '_blank');
     setShowModal(false);
   };
 
