@@ -107,6 +107,15 @@ export default function Hero() {
                                     Book Now
                                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                                 </Link>
+                                <a
+                                    href="https://www.foodpanda.ph/restaurant/f1xu/deliciosa-purok-3"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group px-8 py-4 bg-gradient-to-r from-[#D70F64] to-[#E21B70] hover:from-[#C00E5A] hover:to-[#D01968] text-white font-semibold rounded-full transition-all shadow-lg hover:shadow-pink-500/50 hover:-translate-y-1 flex items-center gap-2"
+                                >
+                                    Order Now
+                                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                                </a>
                                 <Link
                                     href="#menu"
                                     className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold rounded-full border border-white/30 transition-all hover:border-white/50"

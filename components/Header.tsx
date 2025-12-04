@@ -18,11 +18,11 @@ export default function Header() {
   }, []);
 
   const menuItems = [
-    { label: 'Home', href: '#home' },
-    { label: 'Menu', href: '#menu' },
-    { label: 'Gallery', href: '#gallery' },
-    { label: 'Packages', href: '#packages' },
-    { label: 'Contact', href: '#contact' },
+    { label: 'Home', href: '#home', external: false },
+    { label: 'Menu', href: '#menu', external: false },
+    { label: 'Gallery', href: '#gallery', external: false },
+    { label: 'Packages', href: '#packages', external: false },
+    { label: 'Contact', href: '#contact', external: false },
   ];
 
   return (
@@ -48,15 +48,29 @@ export default function Header() {
 
           <nav className="hidden md:flex items-center gap-8">
             {menuItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`font-medium transition-all hover:text-rust relative group ${isScrolled ? 'text-gray-700' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
-                  }`}
-              >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rust transition-all group-hover:w-full"></span>
-              </Link>
+              item.external ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`font-medium transition-all hover:text-rust relative group ${isScrolled ? 'text-gray-700' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
+                    }`}
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rust transition-all group-hover:w-full"></span>
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`font-medium transition-all hover:text-rust relative group ${isScrolled ? 'text-gray-700' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]'
+                    }`}
+                >
+                  {item.label}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-rust transition-all group-hover:w-full"></span>
+                </Link>
+              )
             ))}
           </nav>
 
@@ -79,14 +93,27 @@ export default function Header() {
         <div className="md:hidden bg-white border-t">
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-4">
             {menuItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-gray-700 hover:text-rust font-medium transition-colors py-2"
-              >
-                {item.label}
-              </Link>
+              item.external ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-gray-700 hover:text-rust font-medium transition-colors py-2"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-gray-700 hover:text-rust font-medium transition-colors py-2"
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
           </nav>
         </div>
