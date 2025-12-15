@@ -1,4 +1,4 @@
-import { ImageResponse } from 'next/og';
+import { ImageResponse } from '@vercel/og';
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
@@ -30,8 +30,7 @@ export async function GET(request: Request) {
 
         const { title, quote, reference, image } = inspiration;
 
-        // Load a font (Times New Roman-ish)
-        // We'll use a standard fetch for a Google Font to ensure it looks "Serif"
+        // Load a font
         const fontData = await fetch(
             new URL('https://fonts.gstatic.com/s/playfairdisplay/v30/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtM.woff2', import.meta.url)
         ).then((res) => res.arrayBuffer());
@@ -178,7 +177,7 @@ export async function GET(request: Request) {
             ),
             {
                 width: 1200,
-                height: 1200, // Square-ish (Facebook prefers 1.91:1 usually, but 1:1 is good for feed. Let's do Square as requested)
+                height: 1200,
                 fonts: [
                     {
                         name: 'Playfair Display',
@@ -190,6 +189,6 @@ export async function GET(request: Request) {
         );
     } catch (e: any) {
         console.log(`${e.message}`);
-        return new ImageResponse(<>Failed to generate image</>, { width: 1200, height: 630 });
+        return new ImageResponse(<>Failed to generate images</>, { width: 1200, height: 630 });
     }
 }

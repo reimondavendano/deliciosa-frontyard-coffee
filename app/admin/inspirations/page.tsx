@@ -22,6 +22,58 @@ import {
 
 const HASHTAGS = '#DeliverseWednesday #deliciosaph #FaithWednesday #MidweekDevotion #BibleVerseOfTheDay #VerseForToday';
 
+// Reusable Card Component for consistent rendering
+const SocialCard = ({ inspiration, innerRef, style }: { inspiration: WeeklyInspiration, innerRef?: React.RefObject<HTMLDivElement>, style?: React.CSSProperties }) => (
+    <div
+        ref={innerRef}
+        style={style}
+        className="w-[600px] h-[600px] bg-gradient-to-br from-rustic-blue via-rustic-blue-dark to-rustic-blue relative flex flex-col items-center justify-center text-center p-12 text-white shrink-0"
+    >
+        {/* Background Image */}
+        {inspiration.image && (
+            <div
+                className="absolute inset-0 z-0 opacity-40"
+                style={{
+                    backgroundImage: `url(${inspiration.image})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                }}
+            />
+        )}
+
+        {/* Overlay Gradient */}
+        <div className="absolute inset-0 bg-black/20 z-0"></div>
+
+        {/* Content */}
+        <div className="relative z-10 space-y-8 flex flex-col items-center w-full">
+            <div className="inline-flex items-center gap-2 bg-white/10 px-6 py-2 rounded-full backdrop-blur-md border border-white/20">
+                <Sparkles className="w-6 h-6 text-warm-cream" />
+                <span className="text-warm-cream font-bold tracking-widest uppercase">
+                    {inspiration.title || 'Deli-verse Wednesday'}
+                </span>
+            </div>
+
+            <blockquote className="font-serif text-5xl font-medium leading-tight italic drop-shadow-lg max-w-lg mx-auto">
+                "{inspiration.quote}"
+            </blockquote>
+
+            {inspiration.reference && (
+                <div className="mt-8 relative flex flex-col items-center">
+                    <div className="w-16 h-1 bg-warm-cream mb-4 rounded-full"></div>
+                    <p className="text-2xl font-semibold tracking-wide text-warm-cream">
+                        {inspiration.reference}
+                    </p>
+                </div>
+            )}
+        </div>
+
+        {/* Footer Branding */}
+        <div className="absolute bottom-8 text-white/50 text-sm font-light tracking-widest uppercase">
+            Deliciosa Frontyard Café
+        </div>
+    </div>
+);
+
 export default function InspirationsPage() {
     const { showToast } = useToast();
     const [inspiration, setInspiration] = useState<WeeklyInspiration | null>(null);
@@ -31,7 +83,7 @@ export default function InspirationsPage() {
     const [showShareModal, setShowShareModal] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
-    // Hidden ref for generating the image
+    // Hidden ref for generating the image - connected to the off-screen element
     const socialCardRef = useRef<HTMLDivElement>(null);
 
     const [confirmModal, setConfirmModal] = useState<{
@@ -171,6 +223,7 @@ export default function InspirationsPage() {
         window.open(facebookShareUrl, 'facebook-share', 'width=626,height=436');
         showToast('Opening Facebook share prompt...', 'success');
     };
+
     const generateShareText = () => {
         if (!inspiration) return '';
         const emoji = '🖤✨';
@@ -191,13 +244,17 @@ export default function InspirationsPage() {
         setIsGenerating(true);
 
         try {
-            // Small delay to ensure styles are applied
-            await new Promise(resolve => setTimeout(resolve, 100));
-
+            // Create a canvas from the OFF-SCREEN, FULL-SIZE element
             const canvas = await html2canvas(socialCardRef.current, {
-                useCORS: true, // Important for external images
-                scale: 2, // Higher resolution
-                backgroundColor: '#1E3A8A', // fallback color
+                useCORS: true,
+                scale: 2, // High resolution (1200x1200px output)
+                backgroundColor: '#1E3A8A',
+                logging: false,
+                allowTaint: true,
+                width: 600, // Explicitly set dimensions to match the element
+                height: 600,
+                windowWidth: 600, // Hint to html2canvas about the viewport
+                windowHeight: 600,
             });
 
             const link = document.createElement('a');
@@ -256,12 +313,12 @@ export default function InspirationsPage() {
                                 </span>
                             </div>
 
-                            <blockquote className="text-xl sm:text-3xl italic leading-relaxed mb-6 font-serif px-8">
+                            <blockquote className="text-xl sm:text-3xl italic leading-relaxed mb-6 font-serif px-8 relative z-10">
                                 "{inspiration.quote}"
                             </blockquote>
 
                             {inspiration.reference && (
-                                <p className="text-warm-cream font-medium text-lg">— {inspiration.reference}</p>
+                                <p className="text-warm-cream font-medium text-lg relative z-10">— {inspiration.reference}</p>
                             )}
                         </div>
 
@@ -344,62 +401,34 @@ export default function InspirationsPage() {
                                     </button>
                                 </div>
 
-                                {/* The element to be captured (Hidden off-screen but rendered) */}
-                                <div className="overflow-hidden bg-gray-100 rounded-lg border flex justify-center">
-                                    {/* We scale this down for preview, but capture full size */}
+                                <div className="bg-gray-100 rounded-lg border flex justify-center p-4">
+                                    {/* 
+                      VISIBLE PREVIEW 
+                      This one is scaled down for the user to see in the modal.
+                      We DO NOT capture this one.
+                   */}
                                     <div className="transform scale-50 origin-top h-[300px]">
-                                        {/* THIS IS THE ACTUAL CARD TEMPLATE FOR FACEBOOK */}
-                                        <div
-                                            ref={socialCardRef}
-                                            className="w-[600px] h-[600px] bg-gradient-to-br from-rustic-blue via-rustic-blue-dark to-rustic-blue relative flex flex-col items-center justify-center text-center p-12 text-white"
-                                        >
-                                            {/* Background Image */}
-                                            {inspiration.image && (
-                                                <div
-                                                    className="absolute inset-0 z-0 opacity-40"
-                                                    style={{
-                                                        backgroundImage: `url(${inspiration.image})`,
-                                                        backgroundSize: 'cover',
-                                                        backgroundPosition: 'center',
-                                                    }}
-                                                />
-                                            )}
-
-                                            {/* Overlay Gradient */}
-                                            <div className="absolute inset-0 bg-black/20 z-0"></div>
-
-                                            {/* Content */}
-                                            <div className="relative z-10 space-y-8">
-                                                <div className="inline-flex items-center gap-2 bg-white/10 px-6 py-2 rounded-full backdrop-blur-md border border-white/20">
-                                                    <Sparkles className="w-6 h-6 text-warm-cream" />
-                                                    <span className="text-warm-cream font-bold tracking-widest uppercase">
-                                                        {inspiration.title || 'Deli-verse Wednesday'}
-                                                    </span>
-                                                </div>
-
-                                                <blockquote className="font-serif text-5xl font-medium leading-tight italic drop-shadow-lg">
-                                                    "{inspiration.quote}"
-                                                </blockquote>
-
-                                                {inspiration.reference && (
-                                                    <div className="mt-8 relative">
-                                                        <div className="w-16 h-1 bg-warm-cream mx-auto mb-4 rounded-full"></div>
-                                                        <p className="text-2xl font-semibold tracking-wide text-warm-cream">
-                                                            {inspiration.reference}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Footer Branding */}
-                                            <div className="absolute bottom-8 text-white/50 text-sm font-light tracking-widest uppercase">
-                                                Deliciosa Frontyard Café
-                                            </div>
-                                        </div>
+                                        <SocialCard inspiration={inspiration} />
                                     </div>
                                 </div>
-                                {/* Space holder for the scaled container height */}
-                                <div className="h-[-250px]"></div>
+
+                                {/* 
+                   OFF-SCREEN CAPTURE TARGET 
+                   This is the real one we take a picture of. 
+                   It is full size (600x600) and hidden from view.
+                   This guarantees the text is perfect.
+                */}
+                                <div
+                                    style={{
+                                        position: 'fixed',
+                                        top: 0,
+                                        left: '-9999px',
+                                        visibility: 'visible', // Must be visible for html2canvas
+                                        zIndex: -1,
+                                    }}
+                                >
+                                    <SocialCard inspiration={inspiration} innerRef={socialCardRef} />
+                                </div>
                             </div>
 
                             {/* Caption Section */}
