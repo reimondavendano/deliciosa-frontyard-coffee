@@ -1,51 +1,78 @@
 'use client';
 
-import { Coffee, Droplet, Cake, Star } from 'lucide-react';
-import { useState } from 'react';
+import { Coffee, Droplet, Cake, Star, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { supabase, MenuItem, MenuCategory } from '@/lib/supabase';
 
-const menuData = {
+// Fallback data for when database is empty
+const fallbackMenuData = {
   coffee: [
     { name: 'Americano', description: 'Rich and bold shot of pure coffee', image: '/images/deliciosa-coffee/americano.png' },
     { name: 'Cafe Latte', description: 'Smooth espresso with velvety steamed milk', image: '/images/deliciosa-coffee/cafe-latte.png' },
     { name: 'Salted Caramel', description: 'Sweet and salty caramel delight', image: '/images/deliciosa-coffee/salted-caramel.png' },
-    { name: 'French Vanilla', description: 'Classic vanilla infused latte', image: '/images/deliciosa-coffee/french-vanilla.png' },
-    { name: 'Mocha Latte', description: 'Espresso with chocolate and steamed milk', image: '/images/deliciosa-coffee/mocha-latte.png' },
-    { name: 'Vanilla Latte', description: 'Smooth espresso with vanilla syrup', image: '/images/deliciosa-coffee/vanilla-latte.png' },
-    { name: 'Spanish Latte', description: 'Sweet and creamy condensed milk latte', image: '/images/deliciosa-coffee/cafe-latte.png' },
-    { name: 'Caramel Machiatto', description: 'Espresso marked with caramel and foam', image: '/images/deliciosa-coffee/caramel-machiatto.png' },
-    { name: 'Hazelnut Latte', description: 'Nutty hazelnut infused latte', image: '/images/deliciosa-coffee/vanilla-latte.png' },
   ],
-  nonCoffee: [
+  'non-coffee': [
     { name: 'Dark Chocolate', description: 'Rich and creamy dark chocolate drink', image: '/images/deliciosa-coffee/dark-chocolate.png' },
     { name: 'Matcha Latte', description: 'Premium green tea with milk', image: '/images/deliciosa-coffee/matcha.png' },
-    { name: 'Orange Matcha', description: 'Zesty orange meets earthy matcha', image: '/images/deliciosa-coffee/orange-matcha.png' },
-    { name: 'Thai Tea Latte', description: 'Spiced Thai tea with sweetened milk', image: '/images/deliciosa-coffee/thai-tea-latte.png' },
-    { name: 'Strawberry Matcha', description: 'Sweet strawberry blended with matcha', image: '/images/deliciosa-coffee/matcha-berry.png' },
-    { name: 'Chocolate Mint', description: 'Refreshing mint with rich chocolate', image: '/images/deliciosa-coffee/chocolate-mint.png' },
-    { name: 'Blue Berry Soda', description: 'Refreshing sparkling blueberry soda', image: '/images/deliciosa-coffee/blueberry-soda.png' },
-    { name: 'Lychee Soda', description: 'Zesty and sweet lychee sparkling drink', image: '/images/deliciosa-coffee/lychee-soda.png' },
-    { name: 'Strawberry Choco', description: 'Sweet strawberry blended with rich chocolate', image: '/images/deliciosa-coffee/matcha-berry.png' },
   ],
   pastry: [
     { name: 'Crispy Croffles', description: 'Biscoff, Chocolate, Matcha Strawberry', image: '/images/pastry/crispy-croffles.png' },
     { name: 'Cinnamon Rolls', description: 'Original, Chocolate, Biscoff, Matcha', image: '/images/pastry/cinnamon-rolls.png' },
-    { name: 'Chocolate Chip Cookie', description: 'Classic with melting chocolate chips', image: '/images/pastry/chocolate-chip-cookie.png' },
-    { name: 'Biscoff Cookie', description: 'Crunchy Biscoff delight', image: '/images/pastry/biscoff-cookie.png' },
-    { name: 'Matcha Berry Cookie', description: 'Green tea cookie with berries', image: '/images/pastry/matcha-berry-cookie.png' },
-    { name: 'Oatmeal Chocolate Chip Cookie', description: 'Hearty oatmeal with chocolate chips', image: '/images/pastry/oatmeal-cookie.png' },
-    { name: 'Sliced Cake', description: 'Ube Cheese, Mango Cheese, Triple Delight', image: '/images/pastry/sliced-cake.png' },
   ],
 };
 
 export default function Menu() {
-  const [activeCategory, setActiveCategory] = useState('coffee');
+  const [activeCategory, setActiveCategory] = useState<MenuCategory>('coffee');
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const categories = [
-    { id: 'coffee', label: 'Coffee', icon: Coffee },
-    { id: 'nonCoffee', label: 'Non-Coffee', icon: Droplet },
-    { id: 'pastry', label: 'Pastry', icon: Cake },
+    { id: 'coffee' as MenuCategory, label: 'Coffee', icon: Coffee },
+    { id: 'non-coffee' as MenuCategory, label: 'Non-Coffee', icon: Droplet },
+    { id: 'pastry' as MenuCategory, label: 'Pastry', icon: Cake },
   ];
+
+  useEffect(() => {
+    fetchMenuItems();
+  }, []);
+
+  const fetchMenuItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('is_available', true)
+        .order('category')
+        .order('name');
+
+      if (error) throw error;
+      setMenuItems(data || []);
+    } catch (error) {
+      console.error('Error fetching menu items:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filter items by category
+  const getItemsByCategory = (category: MenuCategory) => {
+    const dbItems = menuItems.filter(item => item.category === category);
+    if (dbItems.length > 0) return dbItems;
+    // Return fallback if no items in DB
+    return fallbackMenuData[category]?.map((item, idx) => ({
+      id: `fallback-${category}-${idx}`,
+      name: item.name,
+      description: item.description,
+      image: item.image,
+      price: 0,
+      category,
+      is_available: true,
+      created_at: new Date().toISOString(),
+    })) || [];
+  };
+
+  const currentItems = getItemsByCategory(activeCategory);
 
   return (
     <section id="menu" className="py-24 bg-stone-50 relative overflow-hidden">
@@ -87,36 +114,53 @@ export default function Menu() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {menuData[activeCategory as keyof typeof menuData].map((item, index) => (
-            <div
-              key={index}
-              className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-stone-100"
-            >
-              <div className="relative w-full h-64 overflow-hidden">
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-
-              <div className="p-6 relative">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-serif text-xl font-bold text-rustic-blue-dark group-hover:text-rust transition-colors">
-                    {item.name}
-                  </h3>
-                  <Star className="h-5 w-5 text-rust opacity-0 group-hover:opacity-100 transition-opacity transform scale-50 group-hover:scale-100" />
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-rustic-blue" />
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {currentItems.map((item) => (
+              <div
+                key={item.id}
+                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-stone-100"
+              >
+                <div className="relative w-full h-64 overflow-hidden">
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-stone-100 flex items-center justify-center">
+                      <Coffee className="w-12 h-12 text-stone-300" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {item.description}
-                </p>
+
+                <div className="p-6 relative">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-serif text-xl font-bold text-rustic-blue-dark group-hover:text-rust transition-colors">
+                      {item.name}
+                    </h3>
+                    <Star className="h-5 w-5 text-rust opacity-0 group-hover:opacity-100 transition-opacity transform scale-50 group-hover:scale-100" />
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {item.description || 'Delicious handcrafted item'}
+                  </p>
+                  {/* Price hidden for now - uncomment when ready
+                  {item.price > 0 && (
+                    <p className="text-rust font-bold text-lg mt-3">₱{item.price.toFixed(2)}</p>
+                  )}
+                  */}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

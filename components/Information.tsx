@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Clock, Send, Loader2, X, Copy, MessageCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function Information() {
   const [formData, setFormData] = useState({
@@ -35,30 +36,47 @@ ${formData.message}`;
     setInquiryData(messengerMessage);
 
     try {
-      // Send email using Web3Forms (free service)
-      const emailData = {
-        access_key: process.env.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY || '',
-        subject: `New Inquiry from ${formData.name} - Deliciosa Food Products`,
-        from_name: 'Deliciosa Website',
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        event_date: formData.eventDate || 'Not specified',
-        message: formData.message,
-        to_email: process.env.NEXT_PUBLIC_TO_EMAIL || 'deliciosafoodproducts@gmail.com',
-      };
+      // Save to Supabase first
+      const { error: dbError } = await supabase
+        .from('inquiries')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            event_date: formData.eventDate || null,
+            message: formData.message,
+            status: 'new'
+          }
+        ]);
 
-      // Send to Web3Forms
-      const response = await fetch('https://api.web3forms.com/submit', {
+      if (dbError) {
+        console.error('Error saving inquiry to database:', dbError);
+        // Continue to send email even if DB save fails, or handle as needed
+      }
+
+      // Send email using Vercel API Route
+      const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(emailData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          eventDate: formData.eventDate,
+          message: formData.message,
+        }),
       });
 
       const result = await response.json();
-      setEmailSent(result.success);
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send email');
+      }
+
+      setEmailSent(true);
 
       // Show modal regardless of email success
       setShowModal(true);

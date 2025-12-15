@@ -3,6 +3,7 @@
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Offer from '@/components/Offer';
+import WeeklyInspirations from '@/components/WeeklyInspirations';
 import Menu from '@/components/Menu';
 import Gallery from '@/components/Gallery';
 import Packages from '@/components/Packages';
@@ -16,6 +17,7 @@ export default function Home() {
       <Header />
       <Hero />
       <Offer />
+      <WeeklyInspirations />
       <Menu />
       <Gallery />
       <Packages />

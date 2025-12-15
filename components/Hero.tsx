@@ -1,25 +1,53 @@
 'use client';
 
-import { ChevronDown, ArrowRight, Coffee } from 'lucide-react';
+import { ChevronDown, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { supabase, Banner } from '@/lib/supabase';
 
 export default function Hero() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [scrollY, setScrollY] = useState(0);
+    const [banners, setBanners] = useState<Banner[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const images = [
+    // Fallback images if no banners in DB
+    const fallbackImages = [
         '/assets/carousel/1.png',
         '/assets/carousel/2.png',
         '/assets/carousel/3.png',
-        '/assets/carousel/4.jpg',
-        '/assets/carousel/5.jpg',
-        '/assets/carousel/6.jpg',
     ];
+
+    useEffect(() => {
+        fetchBanners();
+    }, []);
+
+    const fetchBanners = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('banners')
+                .select('*')
+                .eq('is_active', true)
+                .order('order', { ascending: true });
+
+            if (error) throw error;
+            if (data && data.length > 0) {
+                setBanners(data);
+            }
+        } catch (error) {
+            console.error('Error fetching banners:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const images = banners.length > 0 ? banners.map(b => b.image) : fallbackImages;
 
     // Auto-rotate images every 5 seconds
     useEffect(() => {
+        if (images.length <= 1) return;
+
         const interval = setInterval(() => {
             setCurrentImageIndex((prev) => (prev + 1) % images.length);
         }, 5000);
@@ -129,19 +157,21 @@ export default function Hero() {
             </div>
 
             {/* Carousel Indicators */}
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                {images.map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${currentImageIndex === index
-                            ? 'bg-white w-8'
-                            : 'bg-white/50 hover:bg-white/75'
-                            }`}
-                        aria-label={`Go to slide ${index + 1}`}
-                    />
-                ))}
-            </div>
+            {images.length > 1 && (
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                    {images.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${currentImageIndex === index
+                                ? 'bg-white w-8'
+                                : 'bg-white/50 hover:bg-white/75'
+                                }`}
+                            aria-label={`Go to slide ${index + 1}`}
+                        />
+                    ))}
+                </div>
+            )}
 
             {/* Scroll Indicator */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce z-20">

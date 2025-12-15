@@ -1,108 +1,106 @@
 'use client';
 
-import { Coffee, Cake, Check } from 'lucide-react';
-import { useState } from 'react';
+import { Coffee, Cake, Check, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { supabase, Package, PackageCategory } from '@/lib/supabase';
 
-const coffeePackages = [
+// Fallback packages
+const fallbackCoffeePackages = [
   {
     name: 'Mini',
-    pax: '50 pax',
-    price: '₱6,500',
+    description: '50 pax',
+    price: 6500,
     image: '/packages/mini.png',
-    features: [
+    inclusions: [
       '4 flavors (coffee & non-coffee)',
       '3 hours of service',
       'Professional barista service',
-      'Premium coffee beans',
-      'Choice of espresso-based drinks',
-      'Beautiful display presentation',
     ],
-    popular: false,
   },
   {
     name: 'Classic',
-    pax: '100 pax',
-    price: '₱11,500',
+    description: '100 pax',
+    price: 11500,
     image: '/packages/classic.png',
-    features: [
+    inclusions: [
       '6 flavors (coffee & non-coffee)',
       '3 hours of service',
       'Professional barista service',
-      'Premium coffee beans',
-      'Choice of espresso-based drinks',
-      'Beautiful display presentation',
     ],
-    popular: true,
-  },
-  {
-    name: 'Plus',
-    pax: '150 pax',
-    price: '₱16,500',
-    image: '/packages/plus.png',
-    features: [
-      '8 flavors (coffee & non-coffee)',
-      '4 hours of service',
-      'Professional barista service',
-      'Premium coffee beans',
-      'Choice of espresso-based drinks',
-      'Beautiful display presentation',
-    ],
-    popular: false,
   },
 ];
 
-const pastryPackages = [
+const fallbackPastryPackages = [
   {
     name: 'Starter',
-    pax: '50 pax',
-    price: '₱7,499',
-    features: [
+    description: '50 pax',
+    price: 7499,
+    inclusions: [
       '50 servings of our 6 variety of cakes & pastries',
       '2 hours of service',
       'Free toppers',
-      'Fresh daily-baked pastries',
-      'Variety of sweet treats',
-      'Beautiful display presentation',
     ],
-    popular: false,
-  },
-  {
-    name: 'Crowd',
-    pax: '100 pax',
-    price: '₱14,499',
-    features: [
-      '100 servings of our 6 variety of cakes & pastries',
-      '2 hours of service',
-      'Free toppers',
-      'Free 6x4 inches of our specialty cake',
-      'Fresh daily-baked pastries',
-      'Variety of sweet treats',
-      'Beautiful display presentation',
-    ],
-    popular: true,
-  },
-  {
-    name: 'Celebration',
-    pax: '150 pax',
-    price: '₱21,000',
-    features: [
-      '150 servings of our 6 variety of cakes & pastries',
-      '2 hours of service',
-      'Free toppers',
-      'Free 6x4 inches of our specialty cake',
-      'Fresh daily-baked pastries',
-      'Variety of sweet treats',
-      'Beautiful display presentation',
-    ],
-    popular: false,
   },
 ];
 
 export default function Packages() {
-  const [activeTab, setActiveTab] = useState<'coffee' | 'pastry'>('coffee');
+  const [activeTab, setActiveTab] = useState<'coffee cart' | 'pastry cart'>('coffee cart');
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const currentPackages = activeTab === 'coffee' ? coffeePackages : pastryPackages;
+  useEffect(() => {
+    fetchPackages();
+  }, []);
+
+  const fetchPackages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+
+      if (error) throw error;
+      setPackages(data || []);
+    } catch (error) {
+      console.error('Error fetching packages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getPackagesByCategory = (category: PackageCategory) => {
+    const dbPackages = packages.filter(pkg => pkg.category === category);
+    if (dbPackages.length > 0) return dbPackages;
+
+    // Return fallbacks
+    if (category === 'coffee cart') {
+      return fallbackCoffeePackages.map((pkg, idx) => ({
+        ...pkg,
+        id: `fallback-coffee-${idx}`,
+        category: 'coffee cart' as PackageCategory,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      }));
+    }
+    return fallbackPastryPackages.map((pkg, idx) => ({
+      ...pkg,
+      id: `fallback-pastry-${idx}`,
+      category: 'pastry cart' as PackageCategory,
+      image: null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+    }));
+  };
+
+  const currentPackages = getPackagesByCategory(activeTab);
+
+  // Mark the middle package as popular if there are 3+
+  const markPopular = (pkg: Package, index: number, arr: Package[]) => {
+    if (arr.length >= 3 && index === 1) return true;
+    return false;
+  };
 
   return (
     <section id="packages" className="py-20 bg-white">
@@ -118,8 +116,8 @@ export default function Packages() {
 
           <div className="inline-flex p-1 bg-stone-100 rounded-full">
             <button
-              onClick={() => setActiveTab('coffee')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${activeTab === 'coffee'
+              onClick={() => setActiveTab('coffee cart')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${activeTab === 'coffee cart'
                 ? 'bg-rustic-blue text-white shadow-md'
                 : 'text-gray-600 hover:text-rustic-blue'
                 }`}
@@ -128,8 +126,8 @@ export default function Packages() {
               Coffee Cart
             </button>
             <button
-              onClick={() => setActiveTab('pastry')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${activeTab === 'pastry'
+              onClick={() => setActiveTab('pastry cart')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${activeTab === 'pastry cart'
                 ? 'bg-rustic-blue text-white shadow-md'
                 : 'text-gray-600 hover:text-rustic-blue'
                 }`}
@@ -140,62 +138,81 @@ export default function Packages() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {currentPackages.map((pkg, index) => (
-            <div
-              key={index}
-              className={`relative bg-warm-cream/30 border-2 rounded-2xl p-8 transition-all hover:shadow-2xl hover:scale-105 flex flex-col ${pkg.popular
-                ? 'border-rust shadow-xl'
-                : 'border-warm-brown/20'
-                }`}
-            >
-              {pkg.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-rust text-white px-6 py-1 rounded-full text-sm font-bold shadow-lg whitespace-nowrap">
-                  MOST POPULAR
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-rustic-blue" />
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {currentPackages.map((pkg, index) => {
+              const isPopular = markPopular(pkg, index, currentPackages);
+              return (
+                <div
+                  key={pkg.id}
+                  className={`relative bg-warm-cream/30 border-2 rounded-2xl p-8 transition-all hover:shadow-2xl hover:scale-105 flex flex-col ${isPopular
+                    ? 'border-rust shadow-xl'
+                    : 'border-warm-brown/20'
+                    }`}
+                >
+                  {isPopular && (
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-rust text-white px-6 py-1 rounded-full text-sm font-bold shadow-lg whitespace-nowrap">
+                      MOST POPULAR
+                    </div>
+                  )}
+
+                  {/* Package Image */}
+                  {pkg.image && (
+                    <div className="relative w-full h-48 mb-6 rounded-xl overflow-hidden">
+                      <Image
+                        src={pkg.image}
+                        alt={pkg.name}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  )}
+
+                  <div className="text-center mb-6">
+                    <h3 className="font-serif text-2xl font-bold text-rustic-blue-dark mb-2">
+                      {pkg.name}
+                    </h3>
+                    {pkg.description && (
+                      <p className="text-rust font-semibold mb-4">{pkg.description}</p>
+                    )}
+                    {/* Price hidden for now - uncomment when ready
+                    {pkg.price && (
+                      <p className="text-3xl font-bold text-gray-900">
+                        ₱{pkg.price.toLocaleString()}
+                      </p>
+                    )}
+                    */}
+                  </div>
+
+                  {pkg.inclusions && pkg.inclusions.length > 0 && (
+                    <ul className="space-y-3 mb-8 flex-grow">
+                      {pkg.inclusions.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="h-5 w-5 text-sage shrink-0 mt-0.5" />
+                          <span className="text-gray-700 text-sm">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <a
+                    href="#contact"
+                    className={`block w-full py-3 rounded-full text-center font-semibold transition-all ${isPopular
+                      ? 'bg-rust text-white hover:bg-rust/90 shadow-lg'
+                      : 'bg-rustic-blue text-white hover:bg-rustic-blue-dark'
+                      }`}
+                  >
+                    Book Now
+                  </a>
                 </div>
-              )}
-
-              {/* Package Image - only for coffee packages */}
-              {activeTab === 'coffee' && 'image' in pkg && (
-                <div className="relative w-full h-48 mb-6 rounded-xl overflow-hidden">
-                  <Image
-                    src={pkg.image as string}
-                    alt={pkg.name}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-              )}
-
-              <div className="text-center mb-6">
-                <h3 className="font-serif text-2xl font-bold text-rustic-blue-dark mb-2">
-                  {pkg.name}
-                </h3>
-                <p className="text-rust font-semibold mb-4">{pkg.pax}</p>
-                <p className="text-3xl font-bold text-gray-900">{pkg.price}</p>
-              </div>
-
-              <ul className="space-y-3 mb-8 flex-grow">
-                {pkg.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-sage shrink-0 mt-0.5" />
-                    <span className="text-gray-700 text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <a
-                href="#contact"
-                className={`block w-full py-3 rounded-full text-center font-semibold transition-all ${pkg.popular
-                  ? 'bg-rust text-white hover:bg-rust/90 shadow-lg'
-                  : 'bg-rustic-blue text-white hover:bg-rustic-blue-dark'
-                  }`}
-              >
-                Book Now
-              </a>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="mt-16 text-center">
           <p className="text-gray-600 mb-4">

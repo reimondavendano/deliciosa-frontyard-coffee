@@ -1,99 +1,55 @@
 'use client';
 
-import { useState } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
-
-const galleryImages = [
-  // Events
-  {
-    url: '/events/1.jpeg',
-    alt: 'Event 1',
-    category: 'events',
-  },
-  {
-    url: '/events/2.jpeg',
-    alt: 'Event 2',
-    category: 'events',
-  },
-  {
-    url: '/events/3.jpeg',
-    alt: 'Event 3',
-    category: 'events',
-  },
-  {
-    url: '/events/4.jpg',
-    alt: 'Event 4',
-    category: 'events',
-  },
-  {
-    url: '/events/5.jpg',
-    alt: 'Event 5',
-    category: 'events',
-  },
-  {
-    url: '/events/6.jpg',
-    alt: 'Event 6',
-    category: 'events',
-  },
-  {
-    url: '/events/7.jpg',
-    alt: 'Event 7',
-    category: 'events',
-  },
-  // Operations
-  {
-    url: '/operations/1.jpg',
-    alt: 'Operations 1',
-    category: 'operation',
-  },
-  {
-    url: '/operations/2.jpg',
-    alt: 'Operations 2',
-    category: 'operation',
-  },
-  {
-    url: '/operations/3.jpg',
-    alt: 'Operations 3',
-    category: 'operation',
-  },
-  {
-    url: '/operations/4.jpg',
-    alt: 'Operations 4',
-    category: 'operation',
-  },
-  {
-    url: '/operations/5.jpg',
-    alt: 'Operations 5',
-    category: 'operation',
-  },
-  {
-    url: '/operations/6.jpeg',
-    alt: 'Operations 6',
-    category: 'operation',
-  },
-  {
-    url: '/operations/7.jpg',
-    alt: 'Operations 7',
-    category: 'operation',
-  },
-  {
-    url: '/operations/8.jpg',
-    alt: 'Operations 8',
-    category: 'operation',
-  },
-];
+import { useState, useEffect } from 'react';
+import { X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { supabase, GalleryItem, GalleryCategory } from '@/lib/supabase';
 
 const ITEMS_PER_PAGE = 6;
 
+// Fallback images
+const fallbackImages = [
+  { url: '/events/1.jpeg', category: 'events' },
+  { url: '/events/2.jpeg', category: 'events' },
+  { url: '/operations/1.jpg', category: 'operations' },
+  { url: '/operations/2.jpg', category: 'operations' },
+];
+
 export default function Gallery() {
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState<GalleryCategory | 'all'>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchGalleryItems();
+  }, []);
+
+  const fetchGalleryItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('gallery_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setGalleryItems(data || []);
+    } catch (error) {
+      console.error('Error fetching gallery:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Use DB data or fallback
+  const images = galleryItems.length > 0
+    ? galleryItems.map(item => ({ url: item.image, category: item.category, title: item.title }))
+    : fallbackImages.map(img => ({ ...img, title: null }));
 
   const filteredImages =
     filter === 'all'
-      ? galleryImages
-      : galleryImages.filter((img) => img.category === filter);
+      ? images
+      : images.filter((img) => img.category === filter);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredImages.length / ITEMS_PER_PAGE);
@@ -102,7 +58,7 @@ export default function Gallery() {
   const currentImages = filteredImages.slice(startIndex, endIndex);
 
   // Reset to page 1 when filter changes
-  const handleFilterChange = (newFilter: string) => {
+  const handleFilterChange = (newFilter: GalleryCategory | 'all') => {
     setFilter(newFilter);
     setCurrentPage(1);
   };
@@ -138,8 +94,8 @@ export default function Gallery() {
               All
             </button>
             <button
-              onClick={() => handleFilterChange('operation')}
-              className={`px-6 py-2 rounded-full font-semibold transition-all ${filter === 'operation'
+              onClick={() => handleFilterChange('operations')}
+              className={`px-6 py-2 rounded-full font-semibold transition-all ${filter === 'operations'
                 ? 'bg-rustic-blue text-white'
                 : 'bg-white text-gray-700 hover:bg-stone-200'
                 }`}
@@ -158,61 +114,69 @@ export default function Gallery() {
           </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {currentImages.map((image, index) => (
-            <div
-              key={index}
-              className="relative group overflow-hidden rounded-lg cursor-pointer aspect-square"
-              onClick={() => setSelectedImage(image.url)}
-            >
-              <img
-                src={image.url}
-                alt={image.alt}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-rustic-blue-dark/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                <p className="text-white font-semibold">{image.alt}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-4">
-            <button
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 font-semibold hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronLeft className="h-5 w-5" />
-              Previous
-            </button>
-
-            <div className="flex items-center gap-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 rounded-lg font-semibold transition-all ${currentPage === page
-                      ? 'bg-rustic-blue text-white'
-                      : 'bg-white text-gray-700 hover:bg-stone-200'
-                    }`}
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-rustic-blue" />
+          </div>
+        ) : (
+          <>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {currentImages.map((image, index) => (
+                <div
+                  key={index}
+                  className="relative group overflow-hidden rounded-lg cursor-pointer aspect-square"
+                  onClick={() => setSelectedImage(image.url)}
                 >
-                  {page}
-                </button>
+                  <img
+                    src={image.url}
+                    alt={image.title || `Gallery image ${index + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-rustic-blue-dark/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                    <p className="text-white font-semibold capitalize">{image.category}</p>
+                  </div>
+                </div>
               ))}
             </div>
 
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 font-semibold hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              Next
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 font-semibold hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg font-semibold transition-all ${currentPage === page
+                        ? 'bg-rustic-blue text-white'
+                        : 'bg-white text-gray-700 hover:bg-stone-200'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-gray-700 font-semibold hover:bg-stone-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  Next
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
