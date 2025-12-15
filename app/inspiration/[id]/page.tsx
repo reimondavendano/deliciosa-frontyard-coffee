@@ -27,13 +27,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         };
     }
 
+    // Determine the base URL
+    // In production, we need the deployment URL. In dev, localhost.
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://deliciosa-frontyard-coffee.vercel.app';
+
+    const ogImageUrl = `${baseUrl}/api/og?id=${inspiration.id}`;
+
     return {
         title: inspiration.title || 'Deli-verse Wednesday',
         description: `"${inspiration.quote}" — ${inspiration.reference || 'Deliciosa Frontyard Café'}`,
         openGraph: {
             title: inspiration.title || 'Deli-verse Wednesday',
             description: `"${inspiration.quote}"`,
-            images: inspiration.image ? [inspiration.image] : [],
+            images: [
+                {
+                    url: ogImageUrl,
+                    width: 1200,
+                    height: 1200,
+                    alt: inspiration.title || 'Inspiration',
+                }
+            ],
             type: 'article',
         },
     };
