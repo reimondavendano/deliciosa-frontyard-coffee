@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase, WeeklyInspiration, STORAGE_FOLDERS } from '@/lib/supabase';
 import { uploadImage, deleteImage } from '@/lib/upload';
 import { useToast } from '@/components/admin/Toast';
 import ConfirmModal from '@/components/admin/ConfirmModal';
+import html2canvas from 'html2canvas';
 import {
     Pencil,
     Loader2,
@@ -14,7 +15,9 @@ import {
     Share2,
     Facebook,
     Check,
-    Copy
+    Copy,
+    Download,
+    ImageIcon
 } from 'lucide-react';
 
 const HASHTAGS = '#DeliverseWednesday #deliciosaph #FaithWednesday #MidweekDevotion #BibleVerseOfTheDay #VerseForToday';
@@ -26,6 +29,10 @@ export default function InspirationsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    // Hidden ref for generating the image
+    const socialCardRef = useRef<HTMLDivElement>(null);
 
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
@@ -47,7 +54,6 @@ export default function InspirationsPage() {
 
     const fetchInspiration = async () => {
         try {
-            // Get the first (and only) inspiration
             const { data, error } = await supabase
                 .from('weekly_inspirations')
                 .select('*')
@@ -161,20 +167,38 @@ export default function InspirationsPage() {
     const handleCopyShareText = async () => {
         try {
             await navigator.clipboard.writeText(generateShareText());
-            showToast('Share text copied to clipboard!', 'success');
+            showToast('Caption copied to clipboard!', 'success');
         } catch {
             showToast('Failed to copy text', 'error');
         }
     };
 
-    const handleShareToFacebook = () => {
-        // Get the website URL for sharing
-        const websiteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://deliciosa-frontyard-coffee.vercel.app';
-        const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodeURIComponent(generateShareText())}`;
+    const handleDownloadImage = async () => {
+        if (!socialCardRef.current) return;
+        setIsGenerating(true);
 
-        // Open Facebook share dialog
-        window.open(shareUrl, 'facebook-share', 'width=626,height=436');
-        showToast('Opening Facebook share dialog...', 'success');
+        try {
+            // Small delay to ensure styles are applied
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            const canvas = await html2canvas(socialCardRef.current, {
+                useCORS: true, // Important for external images
+                scale: 2, // Higher resolution
+                backgroundColor: '#1E3A8A', // fallback color
+            });
+
+            const link = document.createElement('a');
+            link.download = `deliverse-wednesday-${new Date().toISOString().split('T')[0]}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            showToast('Image downloaded successfully!', 'success');
+        } catch (error) {
+            console.error('Error generating image:', error);
+            showToast('Failed to generate image. Try again.', 'error');
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     if (isLoading) {
@@ -198,40 +222,42 @@ export default function InspirationsPage() {
             {inspiration ? (
                 <div className="bg-white rounded-xl shadow-sm border overflow-hidden max-w-2xl">
                     {/* Preview Card */}
-                    <div className="bg-gradient-to-br from-rustic-blue via-rustic-blue-dark to-rustic-blue p-8 text-white relative overflow-hidden">
-                        {/* Decorative circles */}
-                        <div className="absolute top-4 right-4 w-20 h-20 border border-white/20 rounded-full"></div>
-                        <div className="absolute bottom-4 left-4 w-12 h-12 border border-white/20 rounded-full"></div>
-
-                        <div className="flex items-center gap-2 mb-6">
-                            <Sparkles className="w-5 h-5 text-warm-cream" />
-                            <span className="text-warm-cream font-semibold text-sm tracking-wide">
-                                {inspiration.title || 'Deli-verse Wednesday'}
-                            </span>
-                        </div>
-
-                        <blockquote className="text-xl sm:text-2xl italic leading-relaxed mb-4">
-                            "{inspiration.quote}"
-                        </blockquote>
-
-                        {inspiration.reference && (
-                            <p className="text-warm-cream font-medium">— {inspiration.reference}</p>
+                    <div className="bg-gradient-to-br from-rustic-blue via-rustic-blue-dark to-rustic-blue p-8 text-white relative overflow-hidden min-h-[300px] flex flex-col justify-center text-center">
+                        {/* Background Image Overlay */}
+                        {inspiration.image && (
+                            <div
+                                className="absolute inset-0 z-0 opacity-30"
+                                style={{
+                                    backgroundImage: `url(${inspiration.image})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                }}
+                            />
                         )}
 
+                        <div className="relative z-10">
+                            <div className="inline-flex items-center gap-2 mb-6 bg-white/10 px-4 py-1 rounded-full backdrop-blur-sm mx-auto">
+                                <Sparkles className="w-4 h-4 text-warm-cream" />
+                                <span className="text-warm-cream font-semibold text-sm tracking-wide">
+                                    {inspiration.title || 'Deli-verse Wednesday'}
+                                </span>
+                            </div>
+
+                            <blockquote className="text-xl sm:text-3xl italic leading-relaxed mb-6 font-serif px-8">
+                                "{inspiration.quote}"
+                            </blockquote>
+
+                            {inspiration.reference && (
+                                <p className="text-warm-cream font-medium text-lg">— {inspiration.reference}</p>
+                            )}
+                        </div>
+
                         {/* Status Badge */}
-                        <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold ${inspiration.is_active ? 'bg-green-500' : 'bg-gray-500'
+                        <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold z-20 ${inspiration.is_active ? 'bg-green-500' : 'bg-gray-500'
                             }`}>
                             {inspiration.is_active ? 'Active' : 'Hidden'}
                         </div>
                     </div>
-
-                    {/* Image Preview */}
-                    {inspiration.image && (
-                        <div className="p-4 border-t bg-gray-50">
-                            <p className="text-sm text-gray-500 mb-2">Background Image:</p>
-                            <img src={inspiration.image} alt="Inspiration background" className="w-full h-32 object-cover rounded-lg" />
-                        </div>
-                    )}
 
                     {/* Actions */}
                     <div className="p-4 border-t flex flex-wrap gap-3">
@@ -246,7 +272,7 @@ export default function InspirationsPage() {
                             onClick={() => setShowShareModal(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-[#1877F2] text-white rounded-lg hover:bg-[#166FE5] transition-all"
                         >
-                            <Facebook className="w-4 h-4" />
+                            <Share2 className="w-4 h-4" />
                             Share to Facebook
                         </button>
                     </div>
@@ -265,7 +291,139 @@ export default function InspirationsPage() {
                 </div>
             )}
 
-            {/* Edit Modal */}
+            {/* Share to Facebook Modal */}
+            {showShareModal && inspiration && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto animate-scale-in">
+                        <div className="flex items-center justify-between p-6 border-b">
+                            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                                <Facebook className="w-6 h-6 text-[#1877F2]" />
+                                Share to Facebook
+                            </h2>
+                            <button onClick={() => setShowShareModal(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Steps Guide */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h3 className="font-semibold text-blue-900 mb-2">How to share perfectly:</h3>
+                                <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
+                                    <li>Generate and download the image below.</li>
+                                    <li>Copy the prepared caption.</li>
+                                    <li>Click "Go to Facebook Page" and create a post.</li>
+                                    <li>Upload the image and paste the caption!</li>
+                                </ol>
+                            </div>
+
+                            {/* Image Generation Section */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium text-gray-700">1. Social Image</p>
+                                    <button
+                                        onClick={handleDownloadImage}
+                                        disabled={isGenerating}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-rustic-blue text-white text-xs font-semibold rounded hover:bg-rustic-blue-dark transition-all disabled:opacity-50"
+                                    >
+                                        {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                                        Download Image
+                                    </button>
+                                </div>
+
+                                {/* The element to be captured (Hidden off-screen but rendered) */}
+                                <div className="overflow-hidden bg-gray-100 rounded-lg border flex justify-center">
+                                    {/* We scale this down for preview, but capture full size */}
+                                    <div className="transform scale-50 origin-top h-[300px]">
+                                        {/* THIS IS THE ACTUAL CARD TEMPLATE FOR FACEBOOK */}
+                                        <div
+                                            ref={socialCardRef}
+                                            className="w-[600px] h-[600px] bg-gradient-to-br from-rustic-blue via-rustic-blue-dark to-rustic-blue relative flex flex-col items-center justify-center text-center p-12 text-white"
+                                        >
+                                            {/* Background Image */}
+                                            {inspiration.image && (
+                                                <div
+                                                    className="absolute inset-0 z-0 opacity-40"
+                                                    style={{
+                                                        backgroundImage: `url(${inspiration.image})`,
+                                                        backgroundSize: 'cover',
+                                                        backgroundPosition: 'center',
+                                                    }}
+                                                />
+                                            )}
+
+                                            {/* Overlay Gradient */}
+                                            <div className="absolute inset-0 bg-black/20 z-0"></div>
+
+                                            {/* Content */}
+                                            <div className="relative z-10 space-y-8">
+                                                <div className="inline-flex items-center gap-2 bg-white/10 px-6 py-2 rounded-full backdrop-blur-md border border-white/20">
+                                                    <Sparkles className="w-6 h-6 text-warm-cream" />
+                                                    <span className="text-warm-cream font-bold tracking-widest uppercase">
+                                                        {inspiration.title || 'Deli-verse Wednesday'}
+                                                    </span>
+                                                </div>
+
+                                                <blockquote className="font-serif text-5xl font-medium leading-tight italic drop-shadow-lg">
+                                                    "{inspiration.quote}"
+                                                </blockquote>
+
+                                                {inspiration.reference && (
+                                                    <div className="mt-8 relative">
+                                                        <div className="w-16 h-1 bg-warm-cream mx-auto mb-4 rounded-full"></div>
+                                                        <p className="text-2xl font-semibold tracking-wide text-warm-cream">
+                                                            {inspiration.reference}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Footer Branding */}
+                                            <div className="absolute bottom-8 text-white/50 text-sm font-light tracking-widest uppercase">
+                                                Deliciosa Frontyard Café
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Space holder for the scaled container height */}
+                                <div className="h-[-250px]"></div>
+                            </div>
+
+                            {/* Caption Section */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium text-gray-700">2. Caption</p>
+                                    <button
+                                        onClick={handleCopyShareText}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200 transition-all"
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                        Copy
+                                    </button>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 whitespace-pre-wrap font-mono border">
+                                    {generateShareText()}
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="pt-2">
+                                <a
+                                    href="https://www.facebook.com/Deliciosaphilippines"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#1877F2] text-white rounded-lg hover:bg-[#166FE5] transition-all font-semibold shadow-md hover:shadow-lg"
+                                >
+                                    <Facebook className="w-5 h-5" />
+                                    3. Go to Facebook Page to Post
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal - Re-using your existing one */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
@@ -360,71 +518,6 @@ export default function InspirationsPage() {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Share to Facebook Modal */}
-            {showShareModal && inspiration && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-scale-in">
-                        <div className="flex items-center justify-between p-6 border-b">
-                            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                                <Facebook className="w-6 h-6 text-[#1877F2]" />
-                                Share to Facebook
-                            </h2>
-                            <button onClick={() => setShowShareModal(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            {/* Preview */}
-                            {inspiration.image && (
-                                <div>
-                                    <p className="text-sm font-medium text-gray-700 mb-2">Image to Share:</p>
-                                    <img src={inspiration.image} alt="Share preview" className="w-full h-48 object-cover rounded-lg" />
-                                </div>
-                            )}
-
-                            <div>
-                                <p className="text-sm font-medium text-gray-700 mb-2">Caption:</p>
-                                <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
-                                    {generateShareText()}
-                                </div>
-                            </div>
-
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="text-sm text-blue-800">
-                                    <strong>Tip:</strong> For best results, copy the caption below and post directly to your Facebook page with the image. This ensures the image appears correctly in the post.
-                                </p>
-                            </div>
-
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    onClick={handleCopyShareText}
-                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-all font-semibold"
-                                >
-                                    <Copy className="w-5 h-5" />
-                                    Copy Caption
-                                </button>
-                                <button
-                                    onClick={handleShareToFacebook}
-                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-[#1877F2] text-white rounded-lg hover:bg-[#166FE5] transition-all font-semibold"
-                                >
-                                    <Share2 className="w-5 h-5" />
-                                    Open Facebook Share Dialog
-                                </button>
-                                <a
-                                    href="https://www.facebook.com/Deliciosaphilippines"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold"
-                                >
-                                    <Facebook className="w-5 h-5" />
-                                    Go to Deliciosa Facebook Page
-                                </a>
-                            </div>
-                        </div>
                     </div>
                 </div>
             )}
