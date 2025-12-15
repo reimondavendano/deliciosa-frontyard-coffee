@@ -158,6 +158,19 @@ export default function InspirationsPage() {
         }
     };
 
+    const handleShareToFacebook = () => {
+        // Get the dynamic inspiration URL so Facebook scrapes the correct image
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://deliciosa-frontyard-coffee.vercel.app';
+        const shareUrl = inspiration
+            ? `${baseUrl}/inspiration/${inspiration.id}`
+            : baseUrl;
+
+        const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(generateShareText())}`;
+
+        // Open Facebook share dialog
+        window.open(facebookShareUrl, 'facebook-share', 'width=626,height=436');
+        showToast('Opening Facebook share prompt...', 'success');
+    };
     const generateShareText = () => {
         if (!inspiration) return '';
         const emoji = '🖤✨';
@@ -415,8 +428,25 @@ export default function InspirationsPage() {
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#1877F2] text-white rounded-lg hover:bg-[#166FE5] transition-all font-semibold shadow-md hover:shadow-lg"
                                 >
                                     <Facebook className="w-5 h-5" />
-                                    3. Go to Facebook Page to Post
+                                    Go to Facebook Page (Manual Post)
                                 </a>
+
+                                <div className="relative flex py-2 items-center">
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                    <span className="flex-shrink-0 mx-4 text-gray-400 text-xs text-center">OR SHARE LINK</span>
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                </div>
+
+                                <button
+                                    onClick={handleShareToFacebook}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-[#1877F2] text-[#1877F2] rounded-lg hover:bg-blue-50 transition-all font-semibold"
+                                >
+                                    <Share2 className="w-5 h-5" />
+                                    Share Link (Auto-Image Prompt)
+                                </button>
+                                <p className="text-xs text-gray-500 text-center px-4">
+                                    *This shares a clickable link that automatically shows the image in the prompt!
+                                </p>
                             </div>
                         </div>
                     </div>
