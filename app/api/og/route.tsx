@@ -30,10 +30,29 @@ export async function GET(request: Request) {
 
         const { title, quote, reference, image } = inspiration;
 
-        // Load a font
-        const fontData = await fetch(
-            new URL('https://fonts.gstatic.com/s/playfairdisplay/v30/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtM.woff2', import.meta.url)
-        ).then((res) => res.arrayBuffer());
+        // Load a font with fallback
+        let fontData;
+        try {
+            const fontResponse = await fetch(new URL('https://fonts.gstatic.com/s/playfairdisplay/v30/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKdFvXDXbtM.woff2', import.meta.url));
+            if (fontResponse.ok) {
+                fontData = await fontResponse.arrayBuffer();
+            }
+        } catch (e) {
+            console.error('Font load failed', e);
+        }
+
+        const imageOptions: any = {
+            width: 1200,
+            height: 1200,
+        };
+
+        if (fontData) {
+            imageOptions.fonts = [{
+                name: 'Playfair Display',
+                data: fontData,
+                style: 'italic',
+            }];
+        }
 
         return new ImageResponse(
             (
@@ -49,6 +68,7 @@ export async function GET(request: Request) {
                         backgroundImage: 'linear-gradient(to bottom right, #1E3A8A, #172554, #1E3A8A)',
                         position: 'relative',
                         overflow: 'hidden',
+                        fontFamily: fontData ? '"Playfair Display"' : 'serif',
                     }}
                 >
                     {/* Background Image Overlay */}
@@ -124,7 +144,7 @@ export async function GET(request: Request) {
                         <div
                             style={{
                                 fontSize: '60px',
-                                fontFamily: '"Playfair Display"',
+                                fontFamily: fontData ? '"Playfair Display"' : 'serif',
                                 fontStyle: 'italic',
                                 lineHeight: 1.2,
                                 marginBottom: '40px',
@@ -175,20 +195,10 @@ export async function GET(request: Request) {
                     </div>
                 </div>
             ),
-            {
-                width: 1200,
-                height: 1200,
-                fonts: [
-                    {
-                        name: 'Playfair Display',
-                        data: fontData,
-                        style: 'italic',
-                    },
-                ],
-            }
+            imageOptions
         );
     } catch (e: any) {
         console.log(`${e.message}`);
-        return new ImageResponse(<>Failed to generate images</>, { width: 1200, height: 630 });
+        return new ImageResponse(<>Failed to generate image</>, { width: 1200, height: 630 });
     }
 }

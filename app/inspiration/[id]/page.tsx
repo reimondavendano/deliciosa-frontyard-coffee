@@ -41,11 +41,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             description: `"${inspiration.quote}"`,
             images: [
                 {
-                    url: ogImageUrl,
+                    url: ogImageUrl, // Priority 1: Beautiful Text Card
                     width: 1200,
                     height: 1200,
-                    alt: inspiration.title || 'Inspiration',
-                }
+                    alt: inspiration.title || 'Inspiration Card',
+                },
+                ...(inspiration.image ? [{ // Priority 2: Raw Photo (Backup)
+                    url: inspiration.image,
+                    width: 1200,
+                    height: 630,
+                    alt: 'Inspiration Background',
+                }] : [])
             ],
             type: 'article',
         },
