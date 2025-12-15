@@ -213,8 +213,13 @@ export default function InspirationsPage() {
     const handleShareToFacebook = () => {
         // Get the dynamic inspiration URL so Facebook scrapes the correct image
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://deliciosa-frontyard-coffee.vercel.app';
+
+        // We append a timestamp (cache buster) to force Facebook to re-scrape the image
+        // instead of showing the old cached "empty" version.
+        const cacheBuster = new Date().getTime();
+
         const shareUrl = inspiration
-            ? `${baseUrl}/inspiration/${inspiration.id}`
+            ? `${baseUrl}/inspiration/${inspiration.id}?v=${cacheBuster}`
             : baseUrl;
 
         const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(generateShareText())}`;
